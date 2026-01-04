@@ -1,7 +1,8 @@
 const express = require('express')
 const router = express.Router()
 const movieCtrl = require('../controllers/movieController')
-const { authenticate, requireRole } = require('../../src/middlewares/auth')
+const { authenticate, requireRole } = require('../middlewares/auth');
+
 
 router.get('/', movieCtrl.getAll)
 router.get('/sorted', movieCtrl.getSorted)

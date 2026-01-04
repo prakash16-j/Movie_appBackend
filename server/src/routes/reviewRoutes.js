@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { addReview, getMovieReviews } = require('../controllers/reviewController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate } = require('../middlewares/auth');
 
 // POST /api/reviews -> Add a review (Protected)
 router.post('/', authenticate, addReview);

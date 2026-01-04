@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { toggleWatchlist, getWatchlist } = require('../controllers/userController');
-const { authenticate } = require('../middleware/authMiddleware');
+const { authenticate } = require('../middlewares/auth');
 
 // POST /api/users/watchlist -> Add or Remove movie (Protected)
 router.post('/watchlist', authenticate, toggleWatchlist);
