@@ -43,3 +43,17 @@ exports.remove = async (req, res) => {
     if (!movie) return res.status(404).json({ message: 'Not found' })
     res.json({ message: 'Deleted' })
 }
+exports.getById = async (req, res) => {
+  try {
+    const movie = await Movie.findById(req.params.id)
+
+    if (!movie) {
+      return res.status(404).json({ message: 'Movie not found' })
+    }
+
+    res.json(movie)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to fetch movie' })
+  }
+}

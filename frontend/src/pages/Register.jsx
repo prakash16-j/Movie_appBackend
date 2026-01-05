@@ -1,6 +1,5 @@
 import { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AuthContext } from '../contexts/AuthContext'
 import {
   TextField,
   Button,
@@ -8,28 +7,44 @@ import {
   Typography,
   Box,
 } from '@mui/material'
+import { AuthContext } from '../contexts/AuthContext'
+import api from '../services/api'
 
-export default function Login() {
+export default function Register() {
   const { login } = useContext(AuthContext)
+  const navigate = useNavigate()
+
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    try {
-      // ✅ get logged-in user
-      const loggedInUser = await login(email, password)
+    setLoading(true)
 
-      // ✅ role-based navigation
-      if (loggedInUser.role === 'admin') {
-        navigate('/admin/dashboard')
-      } else {
-        navigate('/')
-      }
+    try {
+      // 🔗 API INTEGRATION
+      const res = await api.post('/api/auth/register', {
+        name,
+        email,
+        password,
+      })
+
+      // Auto-login after register
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      login(res.data.user)
+
+      navigate('/')
     } catch (err) {
       console.error(err)
-      alert(err.response?.data?.message || 'Invalid email or password')
+      alert(
+        err.response?.data?.message ||
+        'Registration failed'
+      )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -37,14 +52,25 @@ export default function Login() {
     <Container maxWidth="sm">
       <Box sx={{ mt: 8 }}>
         <Typography variant="h4" gutterBottom>
-          Login
+          Register
         </Typography>
 
         <form onSubmit={handleSubmit}>
           <TextField
-            label="Email"
+            label="Name"
             fullWidth
             margin="normal"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <TextField
+            label="Email"
+            type="email"
+            fullWidth
+            margin="normal"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -54,6 +80,7 @@ export default function Login() {
             type="password"
             fullWidth
             margin="normal"
+            required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -63,8 +90,9 @@ export default function Login() {
             variant="contained"
             fullWidth
             sx={{ mt: 2 }}
+            disabled={loading}
           >
-            Login
+            {loading ? 'Registering...' : 'Register'}
           </Button>
         </form>
       </Box>

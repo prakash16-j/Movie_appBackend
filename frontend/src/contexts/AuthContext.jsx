@@ -1,34 +1,44 @@
-import React, { createContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState } from 'react'
 import api from '../services/api'
 
 export const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(() => {
-        try {
-            const raw = localStorage.getItem('user')
-            return raw ? JSON.parse(raw) : null
-        } catch {
-            return null
-        }
-    })
+  const [user, setUser] = useState(
+    JSON.parse(localStorage.getItem('user'))
+  )
 
-    useEffect(() => {
-        if (user && user.token) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${user.token}`
-            localStorage.setItem('user', JSON.stringify(user))
-        } else {
-            delete api.defaults.headers.common['Authorization']
-            localStorage.removeItem('user')
-        }
-    }, [user])
+  // 🔐 LOGIN (API INTEGRATED)
+  const login = async (email, password) => {
+    const res = await api.post('/api/auth/login', { email, password })
 
-    const login = (userData) => setUser(userData)
-    const logout = () => setUser(null)
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    setUser(res.data.user)
 
-    return (
-        <AuthContext.Provider value={{ user, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    )
+    return res.data.user // 👈 REQUIRED
+  }
+
+  // ✅ SET USER AFTER REGISTER
+  const setAuthFromRegister = (token, userData) => {
+    localStorage.setItem('token', token)
+    localStorage.setItem('user', JSON.stringify(userData))
+    setUser(userData)
+  }
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{ user, login, logout, setAuthFromRegister }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
+
+export const useAuth = () => useContext(AuthContext)
