@@ -6,10 +6,10 @@ import { UIProvider } from './contexts/UIContext'
 import { AuthProvider } from './contexts/AuthContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-    <UIProvider>
   <AuthProvider>
+    <UIProvider>
     <RouterProvider router={router} />
-  </AuthProvider>
   </UIProvider>
+  </AuthProvider>
 
 )

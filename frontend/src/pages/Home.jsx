@@ -5,109 +5,57 @@ import {
   Skeleton,
   Pagination,
   Box,
-  TextField,
-  Select,
-  MenuItem,
 } from '@mui/material'
 import Navbar from '../components/Navbar'
 import MovieCard from '../components/MovieCard'
 import api from '../services/api'
+import { useUI } from '../contexts/UIContext'
 
 const LIMIT = 6
 
-const GENRES = [
-  'All',
-  'Action',
-  'Drama',
-  'Comedy',
-  'Thriller',
-  'Sci-Fi',
-  'Romance',
-]
-
 export default function Home() {
-  const [movies, setMovies] = useState([])
-  const [filteredMovies, setFilteredMovies] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { search, genre } = useUI() // 🔥 FROM NAVBAR
 
-  const [search, setSearch] = useState('')
-  const [genre, setGenre] = useState('All')
+  const [movies, setMovies] = useState([])
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
 
-  // 🔽 FETCH MOVIES
+  // 🔽 Fetch movies once
   useEffect(() => {
     setLoading(true)
     api
       .get('/api/movies')
       .then((res) => {
-        const data = res.data?.data || []
-        setMovies(data)
-        setFilteredMovies(data)
+        setMovies(res.data?.data || [])
       })
-      .catch(() => {
-        setMovies([])
-        setFilteredMovies([])
-      })
+      .catch(() => setMovies([]))
       .finally(() => setLoading(false))
   }, [])
 
-  // 🔍 SEARCH + FILTER
-  useEffect(() => {
-    let data = [...movies]
+  // 🔍 FILTER BASED ON NAVBAR ONLY
+  const filteredMovies = movies.filter((movie) => {
+    const matchSearch =
+      movie.title?.toLowerCase().includes(search.toLowerCase()) ||
+      movie.description?.toLowerCase().includes(search.toLowerCase())
 
-    if (search.trim()) {
-      const keyword = search.toLowerCase()
-      data = data.filter(
-        (m) =>
-          m.title?.toLowerCase().includes(keyword) ||
-          m.description?.toLowerCase().includes(keyword)
-      )
-    }
+    const matchGenre =
+      genre === 'All' ||
+      movie.genre?.toLowerCase() === genre.toLowerCase()
 
-    if (genre !== 'All') {
-      data = data.filter((m) => m.genre === genre)
-    }
+    return matchSearch && matchGenre
+  })
 
-    setFilteredMovies(data)
-    setPage(1)
-  }, [search, genre, movies])
-
-  // 📄 PAGINATION
-  const startIndex = (page - 1) * LIMIT
-  const paginatedMovies = filteredMovies.slice(
-    startIndex,
-    startIndex + LIMIT
-  )
+  // 📄 Pagination
+  const start = (page - 1) * LIMIT
+  const paginatedMovies = filteredMovies.slice(start, start + LIMIT)
   const totalPages = Math.ceil(filteredMovies.length / LIMIT)
 
   return (
     <>
       <Navbar />
 
-      <Container maxWidth={false} sx={{ mt: 4, px: 4 }}>
-        {/* 🔍 SEARCH + GENRE */}
-        {/* <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-          <TextField
-            label="Search movies"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            fullWidth
-          />
-
-          <Select
-            value={genre}
-            onChange={(e) => setGenre(e.target.value)}
-            sx={{ minWidth: 200 }}
-          >
-            {GENRES.map((g) => (
-              <MenuItem key={g} value={g}>
-                {g}
-              </MenuItem>
-            ))}
-          </Select>
-        </Box> */}
-
-        {/* 🎬 SAME GRID AS ADMIN */}
+      <Container sx={{ mt: 10 }}>
+        {/* 🎬 MOVIE GRID */}
         <Box
           sx={{
             display: 'grid',
@@ -119,13 +67,13 @@ export default function Home() {
             gap: 5,
           }}
         >
-          {/* 🔥 SHIMMER */}
+          {/* 🔥 LOADING SKELETON */}
           {loading &&
             Array.from({ length: LIMIT }).map((_, i) => (
               <Box key={i}>
                 <Skeleton
                   variant="rectangular"
-                  height={280}
+                  height={260}
                   sx={{ borderRadius: 3 }}
                 />
                 <Skeleton width="80%" />
@@ -141,10 +89,7 @@ export default function Home() {
           {/* 🎥 MOVIES */}
           {!loading &&
             paginatedMovies.map((movie) => (
-              <MovieCard
-                key={movie._id}
-                movie={movie}
-              />
+              <MovieCard key={movie._id} movie={movie} />
             ))}
         </Box>
 
@@ -154,8 +99,7 @@ export default function Home() {
             <Pagination
               count={totalPages}
               page={page}
-              onChange={(e, value) => setPage(value)}
-              color="primary"
+              onChange={(e, v) => setPage(v)}
             />
           </Box>
         )}

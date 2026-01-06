@@ -7,9 +7,7 @@ export const UIProvider = ({ children }) => {
   const [genre, setGenre] = useState('All')
 
   return (
-    <UIContext.Provider
-      value={{ search, setSearch, genre, setGenre }}
-    >
+    <UIContext.Provider value={{ search, setSearch, genre, setGenre }}>
       {children}
     </UIContext.Provider>
   )
