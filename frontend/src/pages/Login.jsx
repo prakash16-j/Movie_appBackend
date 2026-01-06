@@ -7,43 +7,77 @@ import {
   Container,
   Typography,
   Box,
+  Paper,
+  IconButton,
+  InputAdornment,
 } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 
 export default function Login() {
   const { login } = useContext(AuthContext)
+  const navigate = useNavigate()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
+
     try {
-      // ✅ get logged-in user
       const loggedInUser = await login(email, password)
 
-      // ✅ role-based navigation
+      // ✅ ROLE BASED REDIRECT
       if (loggedInUser.role === 'admin') {
         navigate('/admin/dashboard')
       } else {
-        navigate('/')
+        navigate('/') // user goes to movies/home
       }
     } catch (err) {
-      console.error(err)
       alert(err.response?.data?.message || 'Invalid email or password')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8 }}>
-        <Typography variant="h4" gutterBottom>
-          Login
+    <Container
+      maxWidth="sm"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      <Paper
+        elevation={6}
+        sx={{
+          width: '100%',
+          p: 4,
+          borderRadius: 3,
+        }}
+      >
+        <Typography variant="h4" fontWeight="bold" align="center" gutterBottom>
+          Welcome Back 🎬
         </Typography>
 
-        <form onSubmit={handleSubmit}>
+        <Typography
+          variant="body2"
+          align="center"
+          color="text.secondary"
+          sx={{ mb: 3 }}
+        >
+          Login to continue
+        </Typography>
+
+        <Box component="form" onSubmit={handleSubmit}>
           <TextField
             label="Email"
+            type="email"
             fullWidth
+            required
             margin="normal"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -51,23 +85,43 @@ export default function Login() {
 
           <TextField
             label="Password"
-            type="password"
             fullWidth
+            required
             margin="normal"
+            type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
 
           <Button
             type="submit"
             variant="contained"
             fullWidth
-            sx={{ mt: 2 }}
+            size="large"
+            disabled={loading}
+            sx={{
+              mt: 3,
+              py: 1.2,
+              borderRadius: 2,
+              fontWeight: 'bold',
+            }}
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </Button>
-        </form>
-      </Box>
+        </Box>
+      </Paper>
     </Container>
   )
 }

@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import {
-  Grid,
   Container,
   Typography,
-  CircularProgress,
+  Skeleton,
+  Pagination,
+  Box,
   TextField,
   Select,
   MenuItem,
-  Box,
 } from '@mui/material'
 import Navbar from '../components/Navbar'
 import MovieCard from '../components/MovieCard'
 import api from '../services/api'
+
+const LIMIT = 6
 
 const GENRES = [
   'All',
@@ -20,6 +22,7 @@ const GENRES = [
   'Comedy',
   'Thriller',
   'Sci-Fi',
+  'Romance',
 ]
 
 export default function Home() {
@@ -29,75 +32,66 @@ export default function Home() {
 
   const [search, setSearch] = useState('')
   const [genre, setGenre] = useState('All')
+  const [page, setPage] = useState(1)
 
-  // 🔽 Fetch movies from backend (SAFE)
+  // 🔽 FETCH MOVIES
   useEffect(() => {
+    setLoading(true)
     api
       .get('/api/movies')
       .then((res) => {
-        const data = Array.isArray(res.data)
-          ? res.data
-          : res.data.movies || []
-
+        const data = res.data?.data || []
         setMovies(data)
         setFilteredMovies(data)
       })
-      .catch((err) => {
-        console.error('Failed to fetch movies', err)
+      .catch(() => {
         setMovies([])
         setFilteredMovies([])
       })
       .finally(() => setLoading(false))
   }, [])
 
-  // 🔍 SEARCH + GENRE FILTER (DOCUMENT COMPLIANT)
+  // 🔍 SEARCH + FILTER
   useEffect(() => {
     let data = [...movies]
 
-    // Search by title OR description
     if (search.trim()) {
       const keyword = search.toLowerCase()
       data = data.filter(
-        (movie) =>
-          movie.title?.toLowerCase().includes(keyword) ||
-          movie.description?.toLowerCase().includes(keyword)
+        (m) =>
+          m.title?.toLowerCase().includes(keyword) ||
+          m.description?.toLowerCase().includes(keyword)
       )
     }
 
-    // Filter by genre
     if (genre !== 'All') {
-      data = data.filter(
-        (movie) => movie.genre === genre
-      )
+      data = data.filter((m) => m.genre === genre)
     }
 
     setFilteredMovies(data)
+    setPage(1)
   }, [search, genre, movies])
+
+  // 📄 PAGINATION
+  const startIndex = (page - 1) * LIMIT
+  const paginatedMovies = filteredMovies.slice(
+    startIndex,
+    startIndex + LIMIT
+  )
+  const totalPages = Math.ceil(filteredMovies.length / LIMIT)
 
   return (
     <>
       <Navbar />
 
-      <Container sx={{ mt: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Movies
-        </Typography>
-
-        {/* 🔎 Search & Genre Filter */}
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            mb: 3,
-            flexWrap: 'wrap',
-          }}
-        >
+      <Container maxWidth={false} sx={{ mt: 4, px: 4 }}>
+        {/* 🔍 SEARCH + GENRE */}
+        {/* <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
           <TextField
-            label="Search by name or description"
-            variant="outlined"
-            fullWidth
+            label="Search movies"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            fullWidth
           />
 
           <Select
@@ -111,28 +105,59 @@ export default function Home() {
               </MenuItem>
             ))}
           </Select>
+        </Box> */}
+
+        {/* 🎬 SAME GRID AS ADMIN */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: '1fr 1fr 1fr',
+            },
+            gap: 5,
+          }}
+        >
+          {/* 🔥 SHIMMER */}
+          {loading &&
+            Array.from({ length: LIMIT }).map((_, i) => (
+              <Box key={i}>
+                <Skeleton
+                  variant="rectangular"
+                  height={280}
+                  sx={{ borderRadius: 3 }}
+                />
+                <Skeleton width="80%" />
+                <Skeleton width="60%" />
+              </Box>
+            ))}
+
+          {/* ❌ EMPTY */}
+          {!loading && filteredMovies.length === 0 && (
+            <Typography>No movies found</Typography>
+          )}
+
+          {/* 🎥 MOVIES */}
+          {!loading &&
+            paginatedMovies.map((movie) => (
+              <MovieCard
+                key={movie._id}
+                movie={movie}
+              />
+            ))}
         </Box>
 
-        {/* 🎬 Movie Cards */}
-        {loading ? (
-          <CircularProgress />
-        ) : filteredMovies.length === 0 ? (
-          <Typography>No movies found</Typography>
-        ) : (
-          <Grid container spacing={3}>
-            {filteredMovies.map((movie) => (
-              <Grid
-                item
-                xs={12}
-                sm={6}
-                md={4}
-                lg={3}
-                key={movie._id}
-              >
-                <MovieCard movie={movie} />
-              </Grid>
-            ))}
-          </Grid>
+        {/* 📄 PAGINATION */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={(e, value) => setPage(value)}
+              color="primary"
+            />
+          </Box>
         )}
       </Container>
     </>
