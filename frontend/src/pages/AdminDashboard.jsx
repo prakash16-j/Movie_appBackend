@@ -1,179 +1,191 @@
-import { useEffect, useState, useContext } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  AppBar,
-  Toolbar,
-  Typography,
   Container,
-  Grid,
   Card,
-  CardMedia,
   CardContent,
   CardActions,
+  CardMedia,
   Button,
-  TextField,
-  MenuItem,
+  Typography,
+  Skeleton,
+  Pagination,
   Box,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { AuthContext } from '../contexts/AuthContext'
+import { useUI } from '../contexts/UIContext'
 
-const GENRES = ['All', 'Action', 'Drama', 'Comedy', 'Thriller', 'Sci-Fi']
+const LIMIT = 6
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const { logout } = useContext(AuthContext)
+  const { search, genre } = useUI()
 
-  // ✅ MUST be array
   const [movies, setMovies] = useState([])
-  const [search, setSearch] = useState('')
-  const [genre, setGenre] = useState('All')
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
-  // 🔹 Fetch movies
   useEffect(() => {
-    fetchMovies()
-  }, [])
+    fetchMovies(page)
+  }, [page])
 
-  const fetchMovies = async () => {
+  const fetchMovies = async (pageNumber) => {
     try {
-      const res = await api.get('/api/movies')
-
-      // 🔥 FIX: backend returns { data: [...] }
+      setLoading(true)
+      const res = await api.get(
+        `/api/movies?page=${pageNumber}&limit=${LIMIT}`
+      )
       setMovies(res.data.data || [])
-    } catch (err) {
-      console.error(err)
-      alert('Failed to load movies')
+      setTotal(res.data.total || 0)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // 🔹 Delete movie
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this movie?')) return
-
-    try {
-      await api.delete(`/api/movies/${id}`)
-      fetchMovies()
-    } catch (err) {
-      console.error(err)
-      alert('Failed to delete movie')
-    }
-  }
-
-  // 🔹 Search + Genre filter
   const filteredMovies = movies.filter((movie) => {
     const matchSearch =
       movie.title.toLowerCase().includes(search.toLowerCase()) ||
       movie.description.toLowerCase().includes(search.toLowerCase())
 
-    const matchGenre =
-      genre === 'All' || movie.genre === genre
+    const matchGenre = genre === 'All' || movie.genre === genre
 
     return matchSearch && matchGenre
   })
 
+  const totalPages = Math.ceil(total / LIMIT)
+
   return (
-    <>
-      {/* 🔝 NAVBAR */}
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            🎬 Admin Dashboard
-          </Typography>
+    <Container maxWidth={false} sx={{ mt: 4, px: 4 }}>
+      {/* TOTAL COUNT */}
+      <Typography variant="h6" sx={{ mb: 2 }}>
+        Total Movies: {total}
+      </Typography>
 
-          <TextField
-            size="small"
-            placeholder="Search movies..."
-            sx={{ bgcolor: 'white', borderRadius: 1, mr: 2 }}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* 🎬 CARD GRID — CSS GRID (NOT MUI GRID) */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: '1fr 1fr',
+            md: '1fr 1fr 1fr',
+          },
+          gap: 5,
+        }}
+      >
+        {/* 🔥 SKELETON */}
+        {loading &&
+          Array.from({ length: LIMIT }).map((_, i) => (
+            <Card key={i} sx={{ height: 420, borderRadius: 3 }}>
+              <Skeleton variant="rectangular" height={240} />
+              <CardContent>
+                <Skeleton width="80%" />
+                <Skeleton width="60%" />
+              </CardContent>
+            </Card>
+          ))}
 
-          <TextField
-            select
-            size="small"
-            sx={{ bgcolor: 'white', borderRadius: 1, mr: 2 }}
-            value={genre}
-            onChange={(e) => setGenre(e.target.value)}
-          >
-            {GENRES.map((g) => (
-              <MenuItem key={g} value={g}>
-                {g}
-              </MenuItem>
-            ))}
-          </TextField>
+        {/* ❌ EMPTY */}
+        {!loading && filteredMovies.length === 0 && (
+          <Typography>No movies found</Typography>
+        )}
 
-          <Button
-            variant="contained"
-            color="success"
-            sx={{ mr: 2 }}
-            onClick={() => navigate('/admin/add')}
-          >
-            + Add Movie
-          </Button>
-
-          <Button color="inherit" onClick={logout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      {/* 🎬 MOVIES GRID */}
-      <Container sx={{ mt: 4 }}>
-        <Grid container spacing={3}>
-          {filteredMovies.length === 0 && (
-            <Typography sx={{ m: 2 }}>No movies found</Typography>
-          )}
-
-          {filteredMovies.map((movie) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={movie._id}>
-              <Card sx={{ height: '100%' }}>
+        {/* 🎬 MOVIES */}
+        {!loading &&
+          filteredMovies.map((movie) => (
+            <Card
+              key={movie._id}
+              sx={{
+                height: 420,
+                width:400,
+                borderRadius: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                transition: '0.3s',
+                '&:hover': {
+                  transform: 'translateY(-6px)',
+                  boxShadow: 6,
+                },
+              }}
+            >
+              {/* IMAGE */}
+              <Box sx={{ height: 280, overflow: 'hidden' }}>
                 <CardMedia
                   component="img"
-                  height="300"
                   image={
                     movie.poster ||
                     'https://via.placeholder.com/300x450?text=No+Image'
                   }
                   alt={movie.title}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'fill',
+                  }}
                 />
+              </Box>
 
-                <CardContent>
-                  <Typography variant="h6" noWrap>
-                    {movie.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {movie.genre || 'N/A'} • ⭐ {movie.rating || 'N/A'}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {movie.duration || 'N/A'}
-                  </Typography>
-                </CardContent>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" noWrap fontWeight={600}>
+                  {movie.title}
+                </Typography>
 
-                <CardActions sx={{ justifyContent: 'space-between' }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() =>
-                      navigate(`/admin/edit/${movie._id}`)
-                    }
-                  >
-                    Edit
-                  </Button>
+                <Typography variant="body2" color="text.secondary">
+                  {movie.genre || 'N/A'} • ⭐ {movie.rating || 'N/A'}
+                </Typography>
 
-                  <Button
-                    size="small"
-                    color="error"
-                    variant="outlined"
-                    onClick={() => handleDelete(movie._id)}
-                  >
-                    Delete
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                  }}
+                >
+                  {movie.description}
+                </Typography>
+              </CardContent>
+
+              <CardActions sx={{ justifyContent: 'space-between' }}>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    navigate(`/admin/edit/${movie._id}`)
+                  }
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() =>
+                    api
+                      .delete(`/api/movies/${movie._id}`)
+                      .then(() => fetchMovies(page))
+                  }
+                >
+                  Delete
+                </Button>
+              </CardActions>
+            </Card>
           ))}
-        </Grid>
-      </Container>
-    </>
+      </Box>
+
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={(e, value) => setPage(value)}
+            color="primary"
+          />
+        </Box>
+      )}
+    </Container>
   )
 }

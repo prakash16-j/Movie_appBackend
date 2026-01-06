@@ -25,10 +25,18 @@ export default function AdminEditMovie() {
   useEffect(() => {
     const fetchMovie = async () => {
       try {
-        const res = await api.get(`/api/movies/${id}`)
+        const res = await api.get(`/api/movies/${id}`, {
+  headers: {
+    'Cache-Control': 'no-cache',
+  },
+})
 
-        // 🔥 FIX: backend returns { data: movie }
-        const movie = res.data.data
+// 🔥 Handle both 200 & cached cases
+const movie = res.data?.data ?? res.data
+
+if (!movie || !movie._id) {
+  throw new Error('Movie data missing')
+}
 
         setForm({
           title: movie.title || '',

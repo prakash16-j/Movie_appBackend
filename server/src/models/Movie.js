@@ -9,6 +9,11 @@ const movieSchema = new mongoose.Schema(
         duration: { type: String },
         imdbId: { type: String, index: true, unique: false },
         poster: { type: String, default: '' },
+         genre: {
+      type: String,
+      required: true, // 🔥 IMPORTANT
+      enum: ['Action', 'Drama', 'Comedy', 'Thriller', 'Sci-Fi', 'Romance'],
+    },
     },
     { timestamps: true }
 )

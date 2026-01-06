@@ -1,6 +1,9 @@
 import React from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 
+// Layout
+import Layout from './components/Layout'
+
 // Public pages
 import Home from './pages/Home'
 import Search from './pages/Search'
@@ -18,50 +21,66 @@ import AdminEditMovie from './pages/AdminEditMovie'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 const router = createBrowserRouter([
-  // 🌍 Public routes
-  { path: '/', element: <Home /> },
-  { path: '/search', element: <Search /> },
-  { path: '/login', element: <Login /> },
-  { path: '/register', element: <Register /> },
-
-  // 🎬 Movie details (login required)
+  {
+    path: '/',
+    element: <Layout><Home /></Layout>,
+  },
+  {
+    path: '/search',
+    element: <Layout><Search /></Layout>,
+  },
+  {
+    path: '/login',
+    element: <Layout><Login /></Layout>,
+  },
+  {
+    path: '/register',
+    element: <Layout><Register /></Layout>,
+  },
   {
     path: '/movie/:id',
     element: (
-      <ProtectedRoute>
-        <MovieDetails />
-      </ProtectedRoute>
+      <Layout>
+        <ProtectedRoute>
+          <MovieDetails />
+        </ProtectedRoute>
+      </Layout>
     ),
   },
-
-  // 🛠 Admin routes
   {
     path: '/admin/dashboard',
     element: (
-      <ProtectedRoute role="admin">
-        <AdminDashboard />
-      </ProtectedRoute>
+      <Layout>
+        <ProtectedRoute role="admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Layout>
     ),
   },
   {
     path: '/admin/add',
     element: (
-      <ProtectedRoute role="admin">
-        <AdminAddMovie />
-      </ProtectedRoute>
+      <Layout>
+        <ProtectedRoute role="admin">
+          <AdminAddMovie />
+        </ProtectedRoute>
+      </Layout>
     ),
   },
   {
     path: '/admin/edit/:id',
     element: (
-      <ProtectedRoute role="admin">
-        <AdminEditMovie />
-      </ProtectedRoute>
+      <Layout>
+        <ProtectedRoute role="admin">
+          <AdminEditMovie />
+        </ProtectedRoute>
+      </Layout>
     ),
   },
-
-  // ❌ Fallback
-  { path: '*', element: <NotFound /> },
+  {
+    path: '*',
+    element: <Layout><NotFound /></Layout>,
+  },
 ])
 
 export default router

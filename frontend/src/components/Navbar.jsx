@@ -1,48 +1,84 @@
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material'
-import { Link, useNavigate } from 'react-router-dom'
-import { useContext } from 'react'
-import { AuthContext } from '../contexts/AuthContext'
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  TextField,
+  MenuItem,
+  Box,
+} from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useUI } from '../contexts/UIContext'
 
-const Navbar = () => {
-  const { user, logout } = useContext(AuthContext)
+const GENRES = ['All', 'Action', 'Drama', 'Comedy', 'Thriller', 'Sci-Fi']
+
+export default function Navbar() {
   const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/')
-  }
+  const { user, logout } = useAuth()
+  const { search, setSearch, genre, setGenre } = useUI()
 
   return (
-    <AppBar position="static">
+    <AppBar position="fixed" sx={{ zIndex: 1300 }}>
       <Toolbar>
         <Typography
           variant="h6"
-          component={Link}
-          to="/"
-          sx={{ flexGrow: 1, textDecoration: 'none', color: 'white' }}
+          sx={{ flexGrow: 1, cursor: 'pointer' }}
+          onClick={() => navigate('/')}
         >
-          🎬 MovieApp
+          🎬 Movie App
         </Typography>
 
-        <Box>
-          {!user ? (
-            <>
-              <Button color="inherit" component={Link} to="/register">
-                Register
-              </Button>
-              <Button color="inherit" component={Link} to="/login">
-                Login
-              </Button>
-            </>
-          ) : (
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
+        {/* 🔍 SEARCH */}
+        <TextField
+          size="small"
+          placeholder="Search movies..."
+          sx={{ bgcolor: 'white', borderRadius: 1, mr: 2 }}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        {/* 🎭 GENRE */}
+        <TextField
+          select
+          size="small"
+          sx={{ bgcolor: 'white', borderRadius: 1, mr: 2 }}
+          value={genre}
+          onChange={(e) => setGenre(e.target.value)}
+        >
+          {GENRES.map((g) => (
+            <MenuItem key={g} value={g}>
+              {g}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {user?.role === 'admin' && (
+          <Button
+            variant="contained"
+            color="success"
+            sx={{ mr: 2 }}
+            onClick={() => navigate('/admin/add')}
+          >
+            + Add Movie
+          </Button>
+        )}
+
+        {!user ? (
+          <>
+            <Button color="inherit" onClick={() => navigate('/login')}>
+              Login
             </Button>
-          )}
-        </Box>
+            <Button color="inherit" onClick={() => navigate('/register')}>
+              Register
+            </Button>
+          </>
+        ) : (
+          <Button color="inherit" onClick={logout}>
+            Logout
+          </Button>
+        )}
       </Toolbar>
     </AppBar>
   )
 }
-
-export default Navbar
